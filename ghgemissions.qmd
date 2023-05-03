@@ -1,0 +1,40 @@
+---
+title: "ghgemissions"
+---
+
+## Clean State GHG data
+
+The [EPA's State GHG Emissions and Removals dataset](https://www.epa.gov/ghgemissions/state-ghg-emissions-and-removals) contains state-level estimates of greenhouse gas emissions between 1990-2020.
+
+The data is in wide format, meaning the emissions for each year are contained in a column e.g. `Y2018`, `Y2019`, `Y2020`, etc.
+To analyze the data, it is useful to pivot the data so that each yearly estimate is in its own row rather than a column. 
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(here)
+library(janitor)
+
+state_file = here("data","AllStateGHGData_042623.xlsx")
+
+state_ghg = read_excel(state_file, sheet = "Data by UNFCCC-IPCC Sectors", guess_max = 18000) |> 
+  janitor::clean_names()
+glimpse(state_ghg)
+```
+
+Pivot the year columns to `year` and store the values in `emissions`.
+I use the `names_transform` argument to remove the 'y' prefix and convert the result to an integer.
+
+```{r}
+(state_ghg_pivot = state_ghg |> 
+  pivot_longer(cols = matches("y[0-9]{4}"), names_to = "year", 
+               names_transform = list(year = \(x) as.integer(str_remove_all(x, "^y"))),
+               values_to = "emissions")) |> 
+  glimpse()
+```
+Write the pivoted data to a csv file.
+
+```{r}
+write_csv(state_ghg_pivot, file = here("data", "AllStatePivot.csv"), na = "")
+```
+
