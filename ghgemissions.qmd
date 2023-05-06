@@ -24,9 +24,26 @@ glimpse(state_ghg)
 
 Pivot the year columns to `year` and store the values in `emissions`.
 I use the `names_transform` argument to remove the 'y' prefix and convert the result to an integer.
+Also add state and territory names.
 
 ```{r}
+state_ids = tibble(state = state.abb, state_name = state.name)
+
 (state_ghg_pivot = state_ghg |> 
+   left_join(state_ids, by = "state") |> 
+    mutate(state_name = case_when(state == "AS" ~ "American Samoa",
+                                  state == "DC" ~ "Washington DC",
+                                  state == "FM" ~ "Federated States of Micronesia",
+                                  state == "FO" ~ "Federal Offshore",
+                                  state == "GU" ~ "Guam",
+                                  state == "MH" ~ "Marshall Islands",
+                                  state == "MP" ~ "Northern Mariana Islands",
+                                  state == "PR" ~ "Puerto Rico",
+                                  state == "PW" ~ "Palau",
+                                  state == "UM" ~ "U.S. Minor Outlying Islands",
+                                  state == "VI" ~ "U.S. Virgin Islands",
+                                  is.na(state_name) ~ state,
+                                  T ~ state_name)) |> 
   pivot_longer(cols = matches("y[0-9]{4}"), names_to = "year", 
                names_transform = list(year = \(x) as.integer(str_remove_all(x, "^y"))),
                values_to = "emissions")) |> 
@@ -36,5 +53,6 @@ Write the pivoted data to a csv file.
 
 ```{r}
 write_csv(state_ghg_pivot, file = here("data", "AllStatePivot.csv"), na = "")
+
 ```
 
